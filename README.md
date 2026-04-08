@@ -53,4 +53,4 @@ The Action runs automatically on every markdown push from here.
 
 ## Known limitation
 
-Google session cookies expire every 2–4 weeks. When the Action fails with an auth error, re-run `python setup.py` and update the two GitHub secrets with the fresh values. Takes about 5 minutes.
+Google session cookies expire periodically. When the Action fails with an auth error, re-run `python setup.py` and update `NOTEBOOKLM_COOKIES` and `NOTEBOOKLM_METADATA` in GitHub Settings → Secrets with the fresh values. Takes about 5 minutes.
