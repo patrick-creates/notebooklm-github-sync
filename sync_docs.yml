@@ -1,0 +1,142 @@
+name: Sync Repo to NotebookLM
+
+on:
+  push:
+    paths:
+      - '**.md'
+  workflow_dispatch:
+    inputs:
+      force_sync:
+        description: 'Force sync all bundles'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install NotebookLM CLI
+        run: pip install notebooklm-mcp-cli
+
+      - name: Setup Authentication Profile
+        env:
+          NLM_COOKIES: ${{ secrets.NOTEBOOKLM_COOKIES }}
+          NLM_METADATA: ${{ secrets.NOTEBOOKLM_METADATA }}
+        run: |
+          set -euo pipefail
+          CONFIG_DIR="/home/runner/.notebooklm-mcp-cli/profiles/default"
+          mkdir -p "$CONFIG_DIR"
+          printf '%s' "$NLM_COOKIES" > "$CONFIG_DIR/cookies.json"
+          printf '%s' "$NLM_METADATA" > "$CONFIG_DIR/metadata.json"
+
+      - name: Verify Authentication
+        run: |
+          if ! nlm login --check 2>&1; then
+            echo "::error::NotebookLM auth expired. Re-run setup.py locally and update GitHub secrets."
+            exit 1
+          fi
+
+      - name: Smart Sync Bundles
+        env:
+          NB_ID: ${{ secrets.NOTEBOOK_ID }}
+          FORCE_SYNC: ${{ inputs.force_sync }}
+        run: |
+          set -euo pipefail
+
+          OUTDIR="${RUNNER_TEMP}/nlm-bundles"
+          rm -rf "$OUTDIR"
+          mkdir -p "$OUTDIR"
+
+          # 1. Identify Changed Files
+          if [ "${FORCE_SYNC:-false}" = "true" ]; then
+            echo "--- Force Sync: Identifying all markdown files ---"
+            CHANGED_FILES=$(find . -type f -name "*.md" -not -path "*/.*" | sed 's|^\./||')
+          else
+            BASE_SHA="${{ github.event.before }}"
+            # Check for initial push / zero-SHA
+            if [ -n "$BASE_SHA" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ]; then
+              CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "$GITHUB_SHA" -- '*.md')
+            else
+              CHANGED_FILES=$(find . -type f -name "*.md" -not -path "*/.*" | sed 's|^\./||')
+            fi
+          fi
+
+          # 2. Helper: delete ALL sources matching a title (nlm uses filename as title)
+          delete_sources_by_title() {
+            local nb_id="$1"
+            local title="$2"
+            local -a source_ids
+            mapfile -t source_ids < <(nlm source list "$nb_id" --json 2>/dev/null \
+              | jq -r --arg t "$title" \
+                '(if type=="array" then . else (.sources // []) end)
+                 | .[] | select(.title == $t) | (.id // .source_id // "")
+                 | select(. != "" and . != "null")' 2>/dev/null)
+            if [ ${#source_ids[@]} -gt 0 ]; then
+              for sid in "${source_ids[@]}"; do
+                echo "Deleting source ID: $sid (title: $title)"
+                nlm source delete "$sid" --confirm || true
+              done
+            else
+              echo "No existing source found for title: $title — skipping delete"
+            fi
+          }
+
+          # 3. Reusable Sync Function
+          sync_bundle() {
+            local title="$1"
+            shift
+            local bundle="$OUTDIR/${title}.md"
+
+            echo ">>> Creating Bundle: $title"
+            {
+              echo "# ${title}"
+              echo
+              for file in "$@"; do
+                echo "--- SOURCE: ${file#./} ---"
+                echo
+                cat "$file"
+                echo
+              done
+            } > "$bundle"
+
+            # nlm ignores --title and uses the filename as the title (e.g. "sql.md")
+            delete_sources_by_title "$NB_ID" "${title}.md"
+            nlm source add "$NB_ID" --title "$title" --file "$bundle" --wait
+          }
+
+          # --- PART A: Root-Level Files ---
+          if echo "$CHANGED_FILES" | grep -qE '^[^/]+\.md$'; then
+            mapfile -d '' ROOT_MD < <(find . -maxdepth 1 -type f -name '*.md' -not -path '*/.*' -print0)
+            if [ ${#ROOT_MD[@]} -gt 0 ]; then
+              sync_bundle "Root_Files" "${ROOT_MD[@]}"
+            fi
+          fi
+
+          # --- PART B: Top-Level Folder Bundles ---
+          while IFS= read -r -d '' DIR; do
+            DIR_NAME="$(basename "$DIR")"
+
+            # Filter out non-content directories
+            case "$DIR_NAME" in
+              .git|.github|node_modules|venv|.nlm-bundles) continue ;;
+            esac
+
+            if printf '%s\n' "$CHANGED_FILES" | grep -F -q "${DIR_NAME}/"; then
+              mapfile -d '' MD_FILES < <(find "$DIR" -type f -name '*.md' -not -path '*/.*' -print0)
+              if [ ${#MD_FILES[@]} -gt 0 ]; then
+                sync_bundle "$DIR_NAME" "${MD_FILES[@]}"
+              else
+                echo ">>> No .md files remaining in $DIR_NAME. Pruning source."
+                delete_sources_by_title "$NB_ID" "${DIR_NAME}.md"
+              fi
+            fi
+          done < <(find . -maxdepth 1 -type d -not -path '.' -not -path '*/.*' -print0)
+
+          echo "--- Sync Process Complete ---"
