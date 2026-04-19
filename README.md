@@ -1,8 +1,8 @@
 # notebooklm-github-sync
 
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-[![Blog post](https://img.shields.io/badge/guide-automategenius.io-orange)](https://www.automategenius.io/blog/github-notebooklm-sync-blog)
+![License](https://img.shields.io/badge/license-MIT-orange)
+[![Blog post](https://img.shields.io/badge/guide-telosignal.com-green)]((https://www.telosignal.com/blog/github-notebooklm-sync-blog))
 
 A GitHub Action that auto-syncs your repository's markdown files to Google NotebookLM on every push, keeping your AI notebook current without manual uploads.
 
@@ -50,7 +50,7 @@ The Action runs automatically on every markdown push from here.
 
 ## Full guide
 
-→ [Auto-Sync GitHub to NotebookLM with GitHub Actions — Setup Guide](https://www.automategenius.io/blog/github-notebooklm-sync-blog)
+→ [Auto-Sync GitHub to NotebookLM with GitHub Actions — Setup Guide](https://www.telosignal.com/blog/github-notebooklm-sync-blog)
 
 ## Files
 
