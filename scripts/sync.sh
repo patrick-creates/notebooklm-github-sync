@@ -25,7 +25,10 @@ else
   fi
 fi
 
-# 2. Helper: delete ALL sources matching a title (nlm uses filename as title)
+# 2. Helper: delete ALL sources matching a title.
+# CLI <0.9 ignored --title and stored the filename ("docs.md");
+# CLI >=0.9 honors --title and stores it bare ("docs"). Match both
+# so dedup survives either version and never accumulates duplicates.
 delete_sources_by_title() {
   local nb_id="$1"
   local title="$2"
@@ -33,7 +36,7 @@ delete_sources_by_title() {
   mapfile -t source_ids < <(nlm source list "$nb_id" --json 2>/dev/null \
     | jq -r --arg t "$title" \
       '(if type=="array" then . else (.sources // []) end)
-       | .[] | select(.title == $t) | (.id // .source_id // "")
+       | .[] | select(.title == $t or .title == ($t + ".md")) | (.id // .source_id // "")
        | select(. != "" and . != "null")' 2>/dev/null)
   if [ ${#source_ids[@]} -gt 0 ]; then
     for sid in "${source_ids[@]}"; do
@@ -63,9 +66,15 @@ sync_bundle() {
     done
   } > "$bundle"
 
-  # nlm ignores --title and uses the filename as the title (e.g. "sql.md")
-  delete_sources_by_title "$NB_ID" "${title}.md"
-  nlm source add "$NB_ID" --title "$title" --file "$bundle" --wait
+  # Pass bare title; helper matches both "$title" and "$title.md".
+  delete_sources_by_title "$NB_ID" "$title"
+  if ! nlm source add "$NB_ID" --title "$title" --file "$bundle" --wait 2>&1 | tee "$RUNNER_TEMP/nlm-add.log"; then
+    echo "::error::nlm source add failed for $title (bundle: $bundle, $(wc -c < "$bundle") bytes)"
+    echo "::group::Last 50 lines of nlm output"
+    tail -50 "$RUNNER_TEMP/nlm-add.log"
+    echo "::endgroup::"
+    exit 1
+  fi
 }
 
 # --- PART A: Root-Level Files ---
@@ -75,7 +84,7 @@ if echo "$CHANGED_FILES" | grep -qE '^[^/]+\.md$'; then
     sync_bundle "Root_Files" "${ROOT_MD[@]}"
   else
     echo ">>> No root-level .md files remaining. Pruning source."
-    delete_sources_by_title "$NB_ID" "Root_Files.md"
+    delete_sources_by_title "$NB_ID" "Root_Files"
   fi
 fi
 
@@ -99,7 +108,7 @@ while IFS= read -r DIR_NAME; do
     sync_bundle "$DIR_NAME" "${MD_FILES[@]}"
   else
     echo ">>> No .md files remaining in $DIR_NAME. Pruning source."
-    delete_sources_by_title "$NB_ID" "${DIR_NAME}.md"
+    delete_sources_by_title "$NB_ID" "$DIR_NAME"
   fi
 done <<< "$CHANGED_DIRS"
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Runs scripts/sync.sh against a throwaway git repo with nlm and jq mocked out.
+# Runs scripts/sync.sh against a throwaway git repo with nlm mocked out.
+# Uses the real jq when installed; otherwise a grep stand-in, which does not check the jq filter itself.
 # Usage: bash tests/test_sync.sh
 set -euo pipefail
 
@@ -8,16 +9,34 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 mkdir -p "$WORK/bin" "$WORK/repo"
-# nlm logs every call; jq answers "source list" with one ID per title
+# nlm logs every call. The notebook holds sources under both title styles:
+# bare (CLI >= 0.9) and "<name>.md" (CLI < 0.9).
 cat > "$WORK/bin/nlm" <<'EOF'
 #!/usr/bin/env bash
 echo "nlm $*" >> "$LOG"
+case "$1 $2" in
+  "source list") cat <<'JSON'
+[
+{"id":"id-guide-new","title":"guide"},
+{"id":"id-guide-old","title":"guide.md"},
+{"id":"id-mydocs","title":"mydocs"},
+{"id":"id-root","title":"Root_Files.md"},
+{"id":"id-docs","title":"docs"},
+{"id":"id-guidelines","title":"guidelines"}
+]
+JSON
+  ;;
+  "source add") [ -z "${NLM_FAIL_ADD:-}" ] || { echo "quota exceeded"; exit 1; } ;;
+esac
 EOF
-cat > "$WORK/bin/jq" <<'EOF'
+if ! command -v jq > /dev/null; then
+  echo "note: jq not installed, using grep stand-in"
+  cat > "$WORK/bin/jq" <<'EOF'
 #!/usr/bin/env bash
-cat > /dev/null; echo "id-$4"
+grep -E "\"title\":\"$4(\.md)?\"" | sed 's/.*"id":"\([^"]*\)".*/\1/'
 EOF
-chmod +x "$WORK/bin/nlm" "$WORK/bin/jq"
+fi
+chmod +x "$WORK/bin/"*
 export PATH="$WORK/bin:$PATH" LOG="$WORK/log" NB_ID=nb RUNNER_TEMP="$WORK/tmp"
 
 cd "$WORK/repo"
@@ -37,17 +56,31 @@ fail=0
 expect() { grep -qxF -- "$1" "$LOG" || { echo "FAIL: expected '$1'"; fail=1; }; }
 reject() { ! grep -qF -- "$1" "$LOG" || { echo "FAIL: unexpected '$1'"; fail=1; }; }
 
+# Changed files only: deleted folder and root files pruned (both title styles), changed folder replaced
 : > "$LOG"; FORCE_SYNC=false bash "$SCRIPT" > /dev/null
-expect "nlm source delete id-guide.md --confirm"
-expect "nlm source delete id-Root_Files.md --confirm"
-expect "nlm source delete id-mydocs.md --confirm"
+expect "nlm source delete id-guide-new --confirm"
+expect "nlm source delete id-guide-old --confirm"
+expect "nlm source delete id-root --confirm"
+expect "nlm source delete id-mydocs --confirm"
+reject "id-guidelines"
+reject "id-docs"
 reject "--title docs "
 
+# Force sync: every existing folder re-uploaded, nothing for the deleted one
 : > "$LOG"; FORCE_SYNC=true bash "$SCRIPT" > /dev/null
-reject "id-guide.md"
+expect "nlm source delete id-docs --confirm"
+reject "id-guide"
 grep -q -- "--title docs " "$LOG" || { echo "FAIL: force sync skipped docs"; fail=1; }
 
+# Failed upload stops the run and shows the CLI output
 : > "$LOG"
+if out=$(NLM_FAIL_ADD=1 FORCE_SYNC=false bash "$SCRIPT" 2>&1); then
+  echo "FAIL: failed upload did not stop the run"; fail=1
+fi
+grep -q "::error::nlm source add failed for mydocs" <<< "$out" || { echo "FAIL: no error line for failed upload"; fail=1; }
+grep -q "quota exceeded" <<< "$out" || { echo "FAIL: CLI output not shown"; fail=1; }
+
+# Unknown base commit stops the run
 if BEFORE_SHA=1234567890123456789012345678901234567890 FORCE_SYNC=false bash "$SCRIPT" > /dev/null 2>&1; then
   echo "FAIL: unknown base commit did not stop the run"; fail=1
 fi

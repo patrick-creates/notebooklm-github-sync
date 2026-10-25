@@ -27,7 +27,9 @@ runs:
   steps:
     - name: Install NotebookLM CLI
       shell: bash
-      run: pip install notebooklm-mcp-cli
+      # Pinned: 0.5.x stored "<file>.md" as title, 0.9.x stores the bare title.
+      # Dedup matches both, but the pin keeps a silent upgrade from changing the schema again.
+      run: pip install notebooklm-mcp-cli==0.9.8
 
     - name: Setup Authentication Profile
       shell: bash
@@ -43,9 +45,17 @@ runs:
 
     - name: Verify Authentication
       shell: bash
+      env:
+        NB_ID: ${{ inputs.notebook-id }}
       run: |
+        set -euo pipefail
         if ! nlm login --check 2>&1; then
-          echo "::error::NotebookLM auth expired. Re-run nlm_auth.py locally and update GitHub secrets."
+          echo "::error::NotebookLM auth expired (session ping failed). Re-run nlm_auth.py locally and update GitHub secrets."
+          exit 1
+        fi
+        # Write-scope probe: the session ping can pass while write cookies are expired.
+        if ! nlm source list "$NB_ID" --json > /dev/null 2>&1; then
+          echo "::error::NotebookLM write-scope auth invalid or notebook not found (source list failed). Check NOTEBOOK_ID, then re-run nlm_auth.py and update GitHub secrets."
           exit 1
         fi
 
