@@ -2,10 +2,6 @@ name: Sync Markdown to NotebookLM
 description: Bundle your repo's Markdown per top-level folder and keep it in sync as NotebookLM sources on every push.
 author: patrick-creates
 
-branding:
-  icon: book-open
-  color: blue
-
 inputs:
   notebook-id:
     description: 'NotebookLM notebook ID (the part after /notebook/ in the URL)'

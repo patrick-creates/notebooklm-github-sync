@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- CI: `tests/test_sync.sh` runs on every push and pull request, with the real `jq`.
+
+### Removed
+- Marketplace `branding` block from `action.yml` (not listed on the Marketplace).
+
 ## [1.1.1] – 2026-10-25
 
 ### Changed

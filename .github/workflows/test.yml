@@ -1,0 +1,22 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  sync-logic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Runner has jq installed, so the real jq filter is exercised here
+      - name: Run sync tests
+        run: bash tests/test_sync.sh
+
+      - name: Check nlm_auth.py compiles
+        run: python3 -m py_compile nlm_auth.py

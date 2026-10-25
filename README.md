@@ -2,6 +2,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
+[![Test](https://github.com/patrick-creates/notebooklm-github-sync/actions/workflows/test.yml/badge.svg)](https://github.com/patrick-creates/notebooklm-github-sync/actions/workflows/test.yml)
 [![Blog post](https://img.shields.io/badge/guide-telosignal.com-green)](https://www.telosignal.com/blog/github-notebooklm-sync-blog)
 
 **Your NotebookLM notebook goes stale the moment your repo docs change — and re-uploading markdown by hand doesn't scale.**
@@ -106,6 +107,7 @@ The Action runs automatically on every markdown push from here.
 | `scripts/sync.sh` | Bundling and upload logic |
 | `sync_docs.yml` | Example workflow — copy to `.github/workflows/` in your target repo |
 | `tests/test_sync.sh` | Runs the sync logic against a throwaway repo with the CLI mocked: `bash tests/test_sync.sh` |
+| `.github/workflows/test.yml` | Runs the tests on every push and pull request |
 
 ## Requirements
 
