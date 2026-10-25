@@ -115,6 +115,26 @@ The Action runs automatically on every markdown push from here.
 - Google account with access to a NotebookLM notebook
 - Optional: [GitHub CLI](https://cli.github.com) for automated secret setup
 
+## Is this safe?
+
+Read this before you set it up. In short: treat the cookies like a password, and only sync repos whose Markdown you are fine sending to Google.
+
+**What the cookies are.** `nlm_auth.py` runs `nlm login`, which saves your Google session cookies under `~/.notebooklm-mcp-cli/profiles/default/`. They are login cookies for your Google account, not a key limited to one notebook. Anyone who has them can act as that Google session until they expire.
+
+**Where they go.**
+- With the GitHub CLI: straight into the repo's encrypted Actions secrets (`NOTEBOOKLM_COOKIES`, `NOTEBOOKLM_METADATA`). Nothing is printed.
+- Without it, outside a GitHub repo, or if `gh secret set` fails: printed to your terminal for manual copy. Clear your terminal scrollback afterwards.
+- In the Action: written to `$HOME/.notebooklm-mcp-cli/` on the runner for the duration of the job. GitHub-hosted runners are discarded after the job. On a **self-hosted runner** the file stays on disk — delete it or don't use this there.
+- GitHub masks secret values in logs. The Action never echoes them.
+
+**Who can use them.** Anyone with write access to the repo can create a workflow that reads the secrets. Don't add these secrets to repos where people you don't trust can push. Workflows triggered from forks don't receive secrets.
+
+**What leaves your repo.** Every `.md` file outside hidden folders (`.github/` and other folders starting with `.`), bundled per top-level folder, goes to NotebookLM. That includes drafts, notes and anything else in Markdown. Check before the first run; use a separate repo or move private notes into a hidden folder if needed.
+
+**Unofficial API.** `notebooklm-mcp-cli` talks to NotebookLM the way the web app does; Google offers no public API for this. Google can change it at any time and the sync breaks until the CLI catches up. The Action pins one CLI version so an upstream release can't change behaviour silently.
+
+**Safer setup.** Use a separate Google account that only owns the notebook, and share the notebook with your main account. Then the cookies in GitHub can't reach your mail or Drive.
+
 ## Limitations
 
 - **Cookie expiration:** Google session cookies expire periodically. When the Action fails with an auth error, re-run `python nlm_auth.py` and update `NOTEBOOKLM_COOKIES` and `NOTEBOOKLM_METADATA` in GitHub Settings → Secrets with the fresh values. Takes about 5 minutes.
