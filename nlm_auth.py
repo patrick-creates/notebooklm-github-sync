@@ -133,6 +133,10 @@ def main():
     parser.add_argument("--repo", help="GitHub repo (owner/repo) to set secrets on. Defaults to the repo of the current folder.")
     args = parser.parse_args()
 
+    if sys.version_info < (3, 11):
+        print(f"Error: notebooklm-mcp-cli {CLI_VERSION} needs Python 3.11+, this is {sys.version.split()[0]}.")
+        sys.exit(1)
+
     print("NotebookLM GitHub Sync — Setup\n")
 
     install_cli()

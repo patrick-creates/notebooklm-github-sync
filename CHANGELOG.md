@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+- Python requirement corrected to 3.11+ (needed by `notebooklm-mcp-cli` 0.15.5). `nlm_auth.py` now stops with a clear message on older Python instead of a pip error.
+
 ## [1.1.0] – 2026-10-25
 
 ### Added

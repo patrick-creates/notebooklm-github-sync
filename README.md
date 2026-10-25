@@ -1,6 +1,6 @@
 # notebooklm-github-sync
 
-![Python](https://img.shields.io/badge/python-3.8%2B-blue)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 [![Blog post](https://img.shields.io/badge/guide-telosignal.com-green)](https://www.telosignal.com/blog/github-notebooklm-sync-blog)
 
@@ -109,7 +109,7 @@ The Action runs automatically on every markdown push from here.
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.11+ (required by `notebooklm-mcp-cli` 0.15.5)
 - `notebooklm-mcp-cli` 0.15.5 (installed by `nlm_auth.py`; the Action pins the same version)
 - GitHub repository with `.md` files
 - Google account with access to a NotebookLM notebook
