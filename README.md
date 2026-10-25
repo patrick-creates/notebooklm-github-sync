@@ -40,7 +40,7 @@ This tool targets the common case: a developer who wants their docs notebook to 
 Run this inside a clone of the repo you want to sync — the secrets go to that repo:
 
 ```bash
-curl -O https://raw.githubusercontent.com/patrick-creates/notebooklm-github-sync/master/nlm_auth.py
+curl -O https://raw.githubusercontent.com/patrick-creates/notebooklm-github-sync/main/nlm_auth.py
 python nlm_auth.py
 ```
 
