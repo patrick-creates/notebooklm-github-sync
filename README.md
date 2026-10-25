@@ -2,9 +2,15 @@
 
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
-[![Blog post](https://img.shields.io/badge/guide-telosignal.com-green)]((https://www.telosignal.com/blog/github-notebooklm-sync-blog))
+[![Blog post](https://img.shields.io/badge/guide-telosignal.com-green)](https://www.telosignal.com/blog/github-notebooklm-sync-blog)
 
-A GitHub Action that auto-syncs your repository's markdown files to Google NotebookLM on every push, keeping your AI notebook current without manual uploads.
+**Your NotebookLM notebook goes stale the moment your repo docs change — and re-uploading markdown by hand doesn't scale.**
+
+A GitHub Actions workflow that auto-syncs your repository's markdown files to Google NotebookLM on every push, keeping your AI notebook current without manual uploads.
+
+<!-- demo.gif — record: push a .md change → Actions run → updated source in NotebookLM -->
+
+⭐ If this saves you manual uploads, a star helps others find it.
 
 ## What it does
 
