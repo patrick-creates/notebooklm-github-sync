@@ -9,6 +9,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - `tests/test_sync.sh`: checks the sync logic against a throwaway repo with the CLI mocked.
 
 ### Changed
+- `setup.py` renamed to `nlm_auth.py`, so it is no longer mistaken for a Python packaging file. It now prints which repo it writes the secrets to, and falls back to manual copy when run outside a GitHub repo.
 - Sync logic moved from `sync_docs.yml` to `scripts/sync.sh`; `sync_docs.yml` is now a short example that calls the Action.
 - The run stops with a clear error when the previous commit is missing (checkout without `fetch-depth: 0`), instead of a bare `git diff` failure.
 

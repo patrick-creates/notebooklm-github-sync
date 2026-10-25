@@ -6,8 +6,11 @@ Authenticates with NotebookLM and configures GitHub secrets in one step.
 Run this once to set up, and again whenever your session expires.
 
 Usage:
-    python setup.py
-    python setup.py --repo owner/repo   # target a specific GitHub repo
+    python nlm_auth.py
+    python nlm_auth.py --repo owner/repo   # target a specific GitHub repo
+
+Without --repo, secrets go to the repo of the current folder, so run it inside a
+clone of the repo you want to sync.
 """
 
 import argparse
@@ -51,7 +54,7 @@ def read_auth():
 
     if not cookies_path.exists():
         print(f"Error: cookies.json not found at {d}")
-        print("Authentication may have failed. Re-run setup.py and complete the browser login.")
+        print("Authentication may have failed. Re-run nlm_auth.py and complete the browser login.")
         sys.exit(1)
 
     cookies = cookies_path.read_text()
@@ -98,6 +101,13 @@ def set_secrets_via_gh(cookies, metadata, notebook_id, repo_flag):
     return True
 
 
+def target_repo(repo_flag):
+    if repo_flag:
+        return repo_flag
+    r = run("gh repo view --json nameWithOwner -q .nameWithOwner", capture=True)
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
 def print_manual_instructions(cookies, metadata, notebook_id):
     print("\n" + "=" * 60)
     print("Add these secrets to your GitHub repo:")
@@ -116,7 +126,7 @@ def print_manual_instructions(cookies, metadata, notebook_id):
 
 def main():
     parser = argparse.ArgumentParser(description="Set up NotebookLM GitHub sync authentication.")
-    parser.add_argument("--repo", help="GitHub repo (owner/repo) to set secrets on. Defaults to current repo.")
+    parser.add_argument("--repo", help="GitHub repo (owner/repo) to set secrets on. Defaults to the repo of the current folder.")
     args = parser.parse_args()
 
     print("NotebookLM GitHub Sync — Setup\n")
@@ -128,9 +138,14 @@ def main():
     notebook_id = get_notebook_id()
 
     gh_available = run("gh --version", capture=True).returncode == 0
-    if gh_available:
-        print("\nSetting GitHub secrets via gh CLI...")
-        if set_secrets_via_gh(cookies, metadata, notebook_id, args.repo):
+    repo = target_repo(args.repo) if gh_available else None
+    if gh_available and not repo:
+        print("\nNo GitHub repo found here. Run this inside a clone of the repo you want to sync,")
+        print("or pass --repo owner/repo. Copy these secrets manually instead:")
+        print_manual_instructions(cookies, metadata, notebook_id)
+    elif gh_available:
+        print(f"\nSetting GitHub secrets on {repo} via gh CLI...")
+        if set_secrets_via_gh(cookies, metadata, notebook_id, repo):
             print("✓ NOTEBOOKLM_COOKIES set")
             print("✓ NOTEBOOKLM_METADATA set")
             print("✓ NOTEBOOK_ID set")
@@ -140,7 +155,7 @@ def main():
     else:
         print("\ngh CLI not found — copy these secrets manually:")
         print_manual_instructions(cookies, metadata, notebook_id)
-        print("\nOr install the GitHub CLI (https://cli.github.com) and re-run setup.py.")
+        print("\nOr install the GitHub CLI (https://cli.github.com) and re-run nlm_auth.py.")
 
     print()
 

@@ -45,7 +45,7 @@ runs:
       shell: bash
       run: |
         if ! nlm login --check 2>&1; then
-          echo "::error::NotebookLM auth expired. Re-run setup.py locally and update GitHub secrets."
+          echo "::error::NotebookLM auth expired. Re-run nlm_auth.py locally and update GitHub secrets."
           exit 1
         fi
 

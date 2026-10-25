@@ -37,12 +37,15 @@ This tool targets the common case: a developer who wants their docs notebook to 
 
 **1. Authenticate (one time)**
 
+Run this inside a clone of the repo you want to sync — the secrets go to that repo:
+
 ```bash
 pip install notebooklm-mcp-cli
-python setup.py
+curl -O https://raw.githubusercontent.com/patrick-creates/notebooklm-github-sync/master/nlm_auth.py
+python nlm_auth.py
 ```
 
-Opens browser → Google login → credentials saved → GitHub secrets set automatically (requires [GitHub CLI](https://cli.github.com)) or printed for manual copy.
+Opens browser → Google login → credentials saved → GitHub secrets set automatically (requires [GitHub CLI](https://cli.github.com)) or printed for manual copy. The script prints which repo it writes to; use `--repo owner/repo` to pick another.
 
 You'll need your **NOTEBOOK_ID**: open your notebook at [notebooklm.google.com](https://notebooklm.google.com) and copy the ID from the URL after `/notebook/`.
 
@@ -83,8 +86,8 @@ jobs:
 | Input | Required | Default | Purpose |
 |---|---|---|---|
 | `notebook-id` | yes | — | ID from the notebook URL |
-| `cookies` | yes | — | `NOTEBOOKLM_COOKIES` secret from `setup.py` |
-| `metadata` | no | `{}` | `NOTEBOOKLM_METADATA` secret from `setup.py` |
+| `cookies` | yes | — | `NOTEBOOKLM_COOKIES` secret from `nlm_auth.py` |
+| `metadata` | no | `{}` | `NOTEBOOKLM_METADATA` secret from `nlm_auth.py` |
 | `force-sync` | no | `false` | Re-upload every folder, not only changed ones |
 
 **3. Push any `.md` file**
@@ -99,7 +102,7 @@ The Action runs automatically on every markdown push from here.
 
 | File | Purpose |
 |---|---|
-| `setup.py` | One-time authentication — sets `NOTEBOOKLM_COOKIES`, `NOTEBOOKLM_METADATA`, `NOTEBOOK_ID` secrets |
+| `nlm_auth.py` | One-time authentication — sets `NOTEBOOKLM_COOKIES`, `NOTEBOOKLM_METADATA`, `NOTEBOOK_ID` secrets |
 | `action.yml` | The Action: installs the CLI, restores the login, runs the sync |
 | `scripts/sync.sh` | Bundling and upload logic |
 | `sync_docs.yml` | Example workflow — copy to `.github/workflows/` in your target repo |
@@ -108,13 +111,13 @@ The Action runs automatically on every markdown push from here.
 ## Requirements
 
 - Python 3.8+
-- `notebooklm-mcp-cli` (installed by `setup.py`)
+- `notebooklm-mcp-cli` (installed by `nlm_auth.py`)
 - GitHub repository with `.md` files
 - Google account with access to a NotebookLM notebook
 - Optional: [GitHub CLI](https://cli.github.com) for automated secret setup
 
 ## Limitations
 
-- **Cookie expiration:** Google session cookies expire periodically. When the Action fails with an auth error, re-run `python setup.py` and update `NOTEBOOKLM_COOKIES` and `NOTEBOOKLM_METADATA` in GitHub Settings → Secrets with the fresh values. Takes about 5 minutes.
+- **Cookie expiration:** Google session cookies expire periodically. When the Action fails with an auth error, re-run `python nlm_auth.py` and update `NOTEBOOKLM_COOKIES` and `NOTEBOOKLM_METADATA` in GitHub Settings → Secrets with the fresh values. Takes about 5 minutes.
 - **Free accounts only:** This tool does not require NotebookLM Enterprise or Google Cloud Platform. It works with free NotebookLM accounts. Enterprise-grade GCS sync is out of scope.
 - **Markdown only:** Only `.md` files are synced. Other file types are ignored.
