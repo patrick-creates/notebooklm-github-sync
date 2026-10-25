@@ -8,7 +8,7 @@
 
 A GitHub Actions workflow that auto-syncs your repository's markdown files to Google NotebookLM on every push, keeping your AI notebook current without manual uploads.
 
-<!-- demo.gif — record: push a .md change → Actions run → updated source in NotebookLM -->
+![How it works: git push → GitHub Actions bundles docs/ into docs.md → NotebookLM source replaced](./how-it-works.gif)
 
 ⭐ If this saves you manual uploads, a star helps others find it.
 
