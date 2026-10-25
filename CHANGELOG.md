@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.1.0] – 2026-10-25
 
 ### Added
 - `action.yml`: use it as `uses: patrick-creates/notebooklm-github-sync@v1` instead of copying the whole workflow. Inputs: `notebook-id`, `cookies`, `metadata`, `force-sync`.
