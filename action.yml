@@ -27,9 +27,10 @@ runs:
   steps:
     - name: Install NotebookLM CLI
       shell: bash
-      # Pinned: 0.5.x stored "<file>.md" as title, 0.9.x stores the bare title.
+      # Pinned: 0.5.x stored "<file>.md" as title, newer versions store the bare title.
       # Dedup matches both, but the pin keeps a silent upgrade from changing the schema again.
-      run: pip install notebooklm-mcp-cli==0.9.8
+      # Must match CLI_VERSION in nlm_auth.py, or the saved login may not load here.
+      run: pip install notebooklm-mcp-cli==0.15.5
 
     - name: Setup Authentication Profile
       shell: bash
@@ -54,8 +55,11 @@ runs:
           exit 1
         fi
         # Write-scope probe: the session ping can pass while write cookies are expired.
-        if ! nlm source list "$NB_ID" --json > /dev/null 2>&1; then
+        if ! nlm source list "$NB_ID" --json > "$RUNNER_TEMP/nlm-probe.log" 2>&1; then
           echo "::error::NotebookLM write-scope auth invalid or notebook not found (source list failed). Check NOTEBOOK_ID, then re-run nlm_auth.py and update GitHub secrets."
+          echo "::group::nlm source list output"
+          tail -30 "$RUNNER_TEMP/nlm-probe.log"
+          echo "::endgroup::"
           exit 1
         fi
 

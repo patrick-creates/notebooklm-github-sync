@@ -20,6 +20,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+CLI_VERSION = "0.15.5"
+
 
 def run(cmd, capture=False, check=False):
     return subprocess.run(cmd, shell=True, capture_output=capture, text=True, check=check)
@@ -30,10 +32,12 @@ def profile_dir():
 
 
 def install_cli():
+    # Must match the version pinned in action.yml, or the cookies/metadata
+    # written here may not parse in CI.
     result = run("nlm --version", capture=True)
-    if result.returncode != 0:
-        print("Installing notebooklm-mcp-cli...")
-        run("pip install notebooklm-mcp-cli", check=True)
+    if result.returncode != 0 or CLI_VERSION not in result.stdout + result.stderr:
+        print(f"Installing notebooklm-mcp-cli=={CLI_VERSION}...")
+        run(f"pip install notebooklm-mcp-cli=={CLI_VERSION}", check=True)
         print()
 
 

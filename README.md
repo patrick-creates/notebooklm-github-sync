@@ -40,7 +40,6 @@ This tool targets the common case: a developer who wants their docs notebook to 
 Run this inside a clone of the repo you want to sync — the secrets go to that repo:
 
 ```bash
-pip install notebooklm-mcp-cli
 curl -O https://raw.githubusercontent.com/patrick-creates/notebooklm-github-sync/master/nlm_auth.py
 python nlm_auth.py
 ```
@@ -111,7 +110,7 @@ The Action runs automatically on every markdown push from here.
 ## Requirements
 
 - Python 3.8+
-- `notebooklm-mcp-cli` (installed by `nlm_auth.py`)
+- `notebooklm-mcp-cli` 0.15.5 (installed by `nlm_auth.py`; the Action pins the same version)
 - GitHub repository with `.md` files
 - Google account with access to a NotebookLM notebook
 - Optional: [GitHub CLI](https://cli.github.com) for automated secret setup
