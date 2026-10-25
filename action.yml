@@ -1,0 +1,58 @@
+name: Sync Markdown to NotebookLM
+description: Bundle your repo's Markdown per top-level folder and keep it in sync as NotebookLM sources on every push.
+author: patrick-creates
+
+branding:
+  icon: book-open
+  color: blue
+
+inputs:
+  notebook-id:
+    description: 'NotebookLM notebook ID (the part after /notebook/ in the URL)'
+    required: true
+  cookies:
+    description: 'Contents of cookies.json from notebooklm-mcp-cli (store as a secret)'
+    required: true
+  metadata:
+    description: 'Contents of metadata.json from notebooklm-mcp-cli (store as a secret)'
+    required: false
+    default: '{}'
+  force-sync:
+    description: 'Re-upload every folder bundle, not only changed ones'
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Install NotebookLM CLI
+      shell: bash
+      run: pip install notebooklm-mcp-cli
+
+    - name: Setup Authentication Profile
+      shell: bash
+      env:
+        NLM_COOKIES: ${{ inputs.cookies }}
+        NLM_METADATA: ${{ inputs.metadata }}
+      run: |
+        set -euo pipefail
+        CONFIG_DIR="$HOME/.notebooklm-mcp-cli/profiles/default"
+        mkdir -p "$CONFIG_DIR"
+        printf '%s' "$NLM_COOKIES" > "$CONFIG_DIR/cookies.json"
+        printf '%s' "$NLM_METADATA" > "$CONFIG_DIR/metadata.json"
+
+    - name: Verify Authentication
+      shell: bash
+      run: |
+        if ! nlm login --check 2>&1; then
+          echo "::error::NotebookLM auth expired. Re-run setup.py locally and update GitHub secrets."
+          exit 1
+        fi
+
+    - name: Smart Sync Bundles
+      shell: bash
+      env:
+        NB_ID: ${{ inputs.notebook-id }}
+        FORCE_SYNC: ${{ inputs.force-sync }}
+        BEFORE_SHA: ${{ github.event.before }}
+      run: bash "$GITHUB_ACTION_PATH/scripts/sync.sh"

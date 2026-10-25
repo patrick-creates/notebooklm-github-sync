@@ -6,7 +6,7 @@
 
 **Your NotebookLM notebook goes stale the moment your repo docs change — and re-uploading markdown by hand doesn't scale.**
 
-A GitHub Actions workflow that auto-syncs your repository's markdown files to Google NotebookLM on every push, keeping your AI notebook current without manual uploads.
+A GitHub Action that auto-syncs your repository's markdown files to Google NotebookLM on every push, keeping your AI notebook current without manual uploads.
 
 ![How it works: git push → GitHub Actions bundles docs/ into docs.md → NotebookLM source replaced](./how-it-works.gif)
 
@@ -48,7 +48,44 @@ You'll need your **NOTEBOOK_ID**: open your notebook at [notebooklm.google.com](
 
 **2. Add the workflow to your repo**
 
-Copy `sync_docs.yml` to `.github/workflows/sync_docs.yml` in the repo you want to sync.
+Create `.github/workflows/sync_docs.yml` in the repo you want to sync (or copy [`sync_docs.yml`](./sync_docs.yml)):
+
+```yaml
+name: Sync Repo to NotebookLM
+
+on:
+  push:
+    paths:
+      - '**.md'
+  workflow_dispatch:
+    inputs:
+      force_sync:
+        description: 'Force sync all bundles'
+        type: boolean
+        default: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needed to see which files changed
+
+      - uses: patrick-creates/notebooklm-github-sync@v1
+        with:
+          notebook-id: ${{ secrets.NOTEBOOK_ID }}
+          cookies: ${{ secrets.NOTEBOOKLM_COOKIES }}
+          metadata: ${{ secrets.NOTEBOOKLM_METADATA }}
+          force-sync: ${{ inputs.force_sync || false }}
+```
+
+| Input | Required | Default | Purpose |
+|---|---|---|---|
+| `notebook-id` | yes | — | ID from the notebook URL |
+| `cookies` | yes | — | `NOTEBOOKLM_COOKIES` secret from `setup.py` |
+| `metadata` | no | `{}` | `NOTEBOOKLM_METADATA` secret from `setup.py` |
+| `force-sync` | no | `false` | Re-upload every folder, not only changed ones |
 
 **3. Push any `.md` file**
 
@@ -63,7 +100,10 @@ The Action runs automatically on every markdown push from here.
 | File | Purpose |
 |---|---|
 | `setup.py` | One-time authentication — sets `NOTEBOOKLM_COOKIES`, `NOTEBOOKLM_METADATA`, `NOTEBOOK_ID` secrets |
-| `sync_docs.yml` | GitHub Actions workflow template — copy to `.github/workflows/` in your target repo |
+| `action.yml` | The Action: installs the CLI, restores the login, runs the sync |
+| `scripts/sync.sh` | Bundling and upload logic |
+| `sync_docs.yml` | Example workflow — copy to `.github/workflows/` in your target repo |
+| `tests/test_sync.sh` | Runs the sync logic against a throwaway repo with the CLI mocked: `bash tests/test_sync.sh` |
 
 ## Requirements
 
