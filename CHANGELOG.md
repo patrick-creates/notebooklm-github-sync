@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+- Deleting a whole top-level folder now removes its source from the notebook. Before, the folder was skipped because it no longer existed, and its stale source stayed.
+- Deleting all root-level `.md` files now removes the `Root_Files` source.
+- A change in `mydocs/` no longer also re-syncs `docs/` (folder match was a substring check).
+
 ## [1.0.0] – 2026-10-25
 
 First tagged release.

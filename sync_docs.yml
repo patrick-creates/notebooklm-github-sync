@@ -116,27 +116,34 @@ jobs:
             mapfile -d '' ROOT_MD < <(find . -maxdepth 1 -type f -name '*.md' -not -path '*/.*' -print0)
             if [ ${#ROOT_MD[@]} -gt 0 ]; then
               sync_bundle "Root_Files" "${ROOT_MD[@]}"
+            else
+              echo ">>> No root-level .md files remaining. Pruning source."
+              delete_sources_by_title "$NB_ID" "Root_Files.md"
             fi
           fi
 
           # --- PART B: Top-Level Folder Bundles ---
-          while IFS= read -r -d '' DIR; do
-            DIR_NAME="$(basename "$DIR")"
+          # Folders come from the changed paths, so deleted folders are pruned too
+          CHANGED_DIRS=$(printf '%s\n' "$CHANGED_FILES" | awk -F/ 'NF > 1 { print $1 }' | sort -u)
+
+          while IFS= read -r DIR_NAME; do
+            [ -n "$DIR_NAME" ] || continue
 
             # Filter out non-content directories
             case "$DIR_NAME" in
-              .git|.github|node_modules|venv|.nlm-bundles) continue ;;
+              .*|node_modules|venv) continue ;;
             esac
 
-            if printf '%s\n' "$CHANGED_FILES" | grep -F -q "${DIR_NAME}/"; then
-              mapfile -d '' MD_FILES < <(find "$DIR" -type f -name '*.md' -not -path '*/.*' -print0)
-              if [ ${#MD_FILES[@]} -gt 0 ]; then
-                sync_bundle "$DIR_NAME" "${MD_FILES[@]}"
-              else
-                echo ">>> No .md files remaining in $DIR_NAME. Pruning source."
-                delete_sources_by_title "$NB_ID" "${DIR_NAME}.md"
-              fi
+            MD_FILES=()
+            if [ -d "$DIR_NAME" ]; then
+              mapfile -d '' MD_FILES < <(find "$DIR_NAME" -type f -name '*.md' -not -path '*/.*' -print0)
             fi
-          done < <(find . -maxdepth 1 -type d -not -path '.' -not -path '*/.*' -print0)
+            if [ ${#MD_FILES[@]} -gt 0 ]; then
+              sync_bundle "$DIR_NAME" "${MD_FILES[@]}"
+            else
+              echo ">>> No .md files remaining in $DIR_NAME. Pruning source."
+              delete_sources_by_title "$NB_ID" "${DIR_NAME}.md"
+            fi
+          done <<< "$CHANGED_DIRS"
 
           echo "--- Sync Process Complete ---"
