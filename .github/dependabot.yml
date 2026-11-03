@@ -1,0 +1,11 @@
+# Monthly and grouped: every Dependabot PR triggers CI, so this keeps it to at most one PR a month.
+# sync_docs.yml and the README example are not workflows here; bump their checkout version by hand.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]
