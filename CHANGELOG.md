@@ -6,6 +6,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ### Added
 - CI: `tests/test_sync.sh` runs on every push and pull request, with the real `jq`.
+- Dependabot version updates for GitHub Actions, monthly and grouped.
+
+### Changed
+- `actions/checkout` v4 -> v7 (Node 24) in CI, `sync_docs.yml` and the README example.
 
 ### Removed
 - Marketplace `branding` block from `action.yml` (not listed on the Marketplace).

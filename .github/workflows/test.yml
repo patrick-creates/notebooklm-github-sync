@@ -12,7 +12,7 @@ jobs:
   sync-logic:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Runner has jq installed, so the real jq filter is exercised here
       - name: Run sync tests
